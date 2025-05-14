@@ -301,7 +301,7 @@ impl 缓存 {
         // 1. 按键分布
         if partial_weights.key_distribution.is_some() {
             let mut current = code;
-            while current > 0 {
+            while current > self.radix {
                 let key = current % self.radix;
                 if let Some(x) = self.distribution.get_mut(key as usize) {
                     *x += frequency;
