@@ -336,7 +336,7 @@ impl 缓存 {
             self.total_duplication += frequency;
             let mut partial_code = code;
             let mut i = 0;
-            while partial_code > 0 {
+            while partial_code > self.radix {
                 self.概率[元素序列[i]] += frequency as f64 * sign as f64 / self.total_frequency as f64;
                 partial_code /= self.radix;
                 i += 1;
