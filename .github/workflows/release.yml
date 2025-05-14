@@ -1,0 +1,134 @@
+name: Release CI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.build_changelog.outputs.changelog }}
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v3
+      - name: 获取静态资源
+        run: |
+          chmod +x fetch.sh
+          ./fetch.sh
+      - name: 上传
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample
+          path: |
+            assets
+            examples
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5          
+        with: 
+          mode: "COMMIT"
+          configurationJson: |
+            {
+              "template": "Change log from #{{FROM_TAG}} to #{{TO_TAG}}: #{{RELEASE_DIFF}}\n#{{UNCATEGORIZED}}",
+              "pr_template": "- [#{{MERGE_SHA}}] - #{{TITLE}}"
+            }
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          body: |
+            ${{ steps.build_changelog.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v3
+      - name: 获取静态资源
+        uses: actions/download-artifact@v4
+        with:
+          name: sample
+      - name: 安装 Rust 工具链
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: "x86_64-unknown-linux-gnu, x86_64-unknown-linux-musl"
+      - name: 构建 chai
+        run: |
+          cargo build --target x86_64-unknown-linux-gnu --bin chai --release
+          cargo build --target x86_64-unknown-linux-musl --bin chai --release
+      - name: Archive
+        run: |
+          cp target/x86_64-unknown-linux-gnu/release/chai ./
+          tar -czf chai-linux-gnu.tar.gz chai assets/* examples/* README.md LICENSE
+          cp target/x86_64-unknown-linux-musl/release/chai ./
+          tar -czf chai-linux-musl.tar.gz chai assets/* examples/* README.md LICENSE
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "chai*.tar.gz"
+          allowUpdates: true
+          body: ${{ needs.prepare.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v3
+      - name: 获取静态资源
+        uses: actions/download-artifact@v4
+        with:
+          name: sample
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+      - name: Install Rust Toolchains
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: "x86_64-apple-darwin, aarch64-apple-darwin"
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild
+      - name: Build
+        run: cargo zigbuild --target universal2-apple-darwin --bin chai --release
+      - name: Archive
+        run: |
+          cp target/universal2-apple-darwin/release/chai ./
+          tar -czf chai-macos.tar.gz chai assets/* examples/* README.md LICENSE
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "chai-macos.tar.gz"
+          allowUpdates: true
+          body: ${{ needs.prepare.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v3
+      - name: 获取静态资源
+        uses: actions/download-artifact@v4
+        with:
+          name: sample
+      - name: Install Rust Toolchains
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: "x86_64-pc-windows-msvc"
+      - name: Build
+        run: cargo build --bin chai --release
+      - name: Archive
+        run: |
+          cp target/release/chai.exe ./
+          7z a -tzip chai-windows.zip chai.exe assets/* examples/* README.md LICENSE
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "chai-windows.zip"
+          allowUpdates: true
+          body: ${{ needs.prepare.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}

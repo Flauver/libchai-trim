@@ -1,0 +1,13 @@
+/target
+**/*.rs.bk
+Cargo.lock
+bin/
+pkg/
+wasm-pack.log
+assets
+examples
+output-*
+package
+*.yaml
+*.txt
+*.svg
