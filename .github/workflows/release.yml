@@ -40,7 +40,7 @@ jobs:
           allowUpdates: true
           body: |
             ${{ steps.build_changelog.outputs.changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MY_TOKEN }}
 
   build-linux:
     needs: prepare
@@ -71,7 +71,7 @@ jobs:
           artifacts: "chai*.tar.gz"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MY_TOKEN }}
 
   build-macos:
     needs: prepare
@@ -104,7 +104,7 @@ jobs:
           artifacts: "chai-macos.tar.gz"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MY_TOKEN }}
 
   build-windows:
     needs: prepare
@@ -131,4 +131,4 @@ jobs:
           artifacts: "chai-windows.zip"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.MY_TOKEN }}
