@@ -80,7 +80,7 @@ impl 退火方法 {
             }
             // 生成一个新解
             let mut next_candidate = annealing_candidate.clone();
-            let diff = 问题.操作.变异(&mut next_candidate);
+            let diff = 问题.操作.变异(&mut next_candidate, &best_rank.2);
             let mut total_diff = diff.clone();
             total_diff.extend(&last_diff);
             let next_rank = 问题.计算(&next_candidate, &Some(total_diff));
@@ -125,14 +125,14 @@ impl 退火方法 {
         steps: usize,
     ) -> (元素映射, f64, f64) {
         let mut candidate = from.clone();
-        let (_, mut energy) = 问题.计算(&candidate, &None);
+        let (_, mut energy, 概率) = 问题.计算(&candidate, &None);
         let mut accepts = 0;
         let mut improves = 0;
 
         for _ in 0..steps {
             let mut next_candidate = candidate.clone();
-            let moved_elements = 问题.操作.变异(&mut next_candidate);
-            let (_, next_energy) = 问题.计算(&next_candidate, &Some(moved_elements));
+            let moved_elements = 问题.操作.变异(&mut next_candidate, &概率);
+            let (_, next_energy, _) = 问题.计算(&next_candidate, &Some(moved_elements));
             let energy_delta = next_energy - energy;
             if energy_delta < 0.0 || (-energy_delta / temperature).exp() > random::<f64>() {
                 accepts += 1;
@@ -163,12 +163,12 @@ impl 退火方法 {
 
         let batch = 1000;
         let mut candidate = 问题.数据.初始映射.clone();
-        let (_, energy) = 问题.计算(&candidate, &None);
+        let (_, energy, 概率) = 问题.计算(&candidate, &None);
         let mut sum_delta = 0.0;
         for _ in 0..batch {
             let mut next_candidate = candidate.clone();
-            let moved_elements = 问题.操作.变异(&mut next_candidate);
-            let (_, next_energy) = 问题.计算(&next_candidate, &Some(moved_elements));
+            let moved_elements = 问题.操作.变异(&mut next_candidate, &概率);
+            let (_, next_energy, _) = 问题.计算(&next_candidate, &Some(moved_elements));
             sum_delta += (next_energy - energy).abs();
         }
         let initial_guess = sum_delta / batch as f64;

@@ -13,7 +13,7 @@ pub trait 编码器 {
         &mut self,
         keymap: &元素映射,
         moved_elements: &Option<Vec<元素>>,
-    ) -> &mut Vec<编码信息>;
+    ) -> (&mut Vec<编码信息>, &Vec<Vec<usize>>);
 }
 
 #[derive(Clone)]

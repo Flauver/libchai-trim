@@ -56,7 +56,7 @@ impl 默认目标函数 {
             .objective
             .clone();
         let 最大编码 = 当量信息.len() as u64;
-        let 构造缓存 = |x: &PartialWeights| 缓存::new(x, 数据.进制, 数据.词列表.len(), 最大编码);
+        let 构造缓存 = |x: &PartialWeights| 缓存::new(x, 数据.进制, 数据.词列表.len(), 最大编码, 数据.初始映射.len());
         let 一字全码 = config.characters_full.as_ref().map(构造缓存);
         let 一字简码 = config.characters_short.as_ref().map(构造缓存);
         let 多字全码 = config.words_full.as_ref().map(构造缓存);
@@ -74,7 +74,7 @@ impl 默认目标函数 {
                 .unwrap_or(1.0),
         };
         Ok(Self {
-            参数, 计数桶列表
+            参数, 计数桶列表,
         })
     }
 }
@@ -84,22 +84,22 @@ impl 目标函数 for 默认目标函数 {
 
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
-        &mut self, 编码结果: &mut [编码信息], 映射: &元素映射
-    ) -> (默认指标, f64) {
+        &mut self, 编码结果: &mut [编码信息], 元素序列: &Vec<Vec<usize>>, 映射: &元素映射
+    ) -> (默认指标, f64, Vec<f64>) {
         let 参数 = &self.参数;
 
         let mut 桶序号列表: Vec<_> = self.计数桶列表.iter().map(|_| 0).collect();
         // 开始计算指标
-        for 编码信息 in 编码结果.iter_mut() {
+        for (i, 编码信息) in 编码结果.iter_mut().enumerate() {
             let 频率 = 编码信息.频率;
             let 桶索引 = if 编码信息.词长 == 1 { 0 } else { 1 };
             let 桶 = &mut self.计数桶列表[桶索引];
             let 桶序号 = 桶序号列表[桶索引];
             if let Some(缓存) = &mut 桶[0] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数);
+                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数, &元素序列[i]);
             }
             if let Some(缓存) = &mut 桶[1] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数);
+                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数, &元素序列[i]);
             }
             桶序号列表[桶索引] += 1;
         }
@@ -122,7 +122,7 @@ impl 目标函数 for 默认目标函数 {
                     指标.words_full = Some(分组指标);
                 }
             });
-            let _ = &桶[1].as_ref().map(|x| {
+            let x = &桶[1].as_ref().unwrap();
                 let (分组指标, 分组目标函数) = x.汇总(参数);
                 目标函数 += 分组目标函数;
                 if 桶索引 == 0 {
@@ -130,9 +130,7 @@ impl 目标函数 for 默认目标函数 {
                 } else {
                     指标.words_short = Some(分组指标);
                 }
-            });
         }
-
         if !参数.正则化.is_empty() {
             let mut 记忆量 = 映射.len() as f64;
             for (元素, 键) in 映射.iter().enumerate() {
@@ -154,6 +152,6 @@ impl 目标函数 for 默认目标函数 {
             let 归一化记忆量 = 记忆量 / 映射.len() as f64;
             目标函数 += 归一化记忆量 * 参数.正则化强度;
         }
-        (指标, 目标函数)
+        (指标, 目标函数, self.计数桶列表[0][1].as_ref().unwrap().概率.clone())
     }
 }

@@ -14,9 +14,14 @@ fn 计时(数据: 数据, 名称: &str, b: &mut Criterion) -> Result<(), 错误>
     b.bench_function(名称, |b| {
         b.iter(|| {
             let mut 映射 = 数据.初始映射.clone();
-            let 模拟移动的元素 = 操作.有约束的随机移动(&mut 映射);
-            let mut 编码结果 = 编码器.编码(&映射, &Some(模拟移动的元素));
-            目标函数.计算(&mut 编码结果, &映射);
+            let mut 概率 = vec![0.0; 数据.初始映射.len()];
+            for i in 数据.进制 as usize..数据.初始映射.len() {
+                概率[i] += 1.0 / (数据.初始映射.len() - 数据.进制 as usize) as f64;
+            }
+            let 模拟移动的元素 = 操作.有约束的随机移动(&mut 映射, &概率);
+            let (编码结果, 元素序列) = 编码器.编码(&映射, &Some(模拟移动的元素));
+            let mut 编码结果 = 编码结果.clone();
+            目标函数.计算(&mut 编码结果, 元素序列, &映射);
         })
     });
     Ok(())

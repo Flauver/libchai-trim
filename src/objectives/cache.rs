@@ -34,6 +34,7 @@ pub struct 缓存 {
     segment: u64,
     length_breakpoints: Vec<u64>,
     radix: u64,
+    pub 概率: Vec<f64>,
 }
 
 impl 缓存 {
@@ -44,12 +45,13 @@ impl 缓存 {
         频率: u64,
         编码信息: &mut 部分编码信息,
         参数: &默认目标函数参数,
+        元素序列: &Vec<usize>,
     ) {
         if !编码信息.有变化 {
             return;
         }
         编码信息.有变化 = false;
-        self.增减(序号, 频率, 编码信息.实际编码, 编码信息.选重标记, 参数, 1);
+        self.增减(序号, 频率, 编码信息.实际编码, 编码信息.选重标记, 参数, 1, &元素序列);
         if 编码信息.上一个实际编码 == 0 {
             return;
         }
@@ -60,6 +62,7 @@ impl 缓存 {
             编码信息.上一个选重标记,
             参数,
             -1,
+            元素序列,
         );
     }
 
@@ -203,6 +206,7 @@ impl 缓存 {
         radix: u64,
         total_count: usize,
         max_index: u64,
+        元素数: usize,
     ) -> Self {
         let total_frequency = 0;
         let total_pairs = 0;
@@ -250,6 +254,7 @@ impl 缓存 {
             segment,
             length_breakpoints,
             radix,
+            概率: vec![0.0; 元素数],
         }
     }
 
@@ -280,6 +285,7 @@ impl 缓存 {
         duplicate: bool,
         parameters: &默认目标函数参数,
         sign: i64,
+        元素序列: &Vec<usize>, 
     ) {
         let frequency = frequency as i64 * sign;
         let radix = self.radix;
@@ -328,6 +334,13 @@ impl 缓存 {
         // 5. 重码
         if duplicate {
             self.total_duplication += frequency;
+            let mut partial_code = code;
+            let mut i = 0;
+            while partial_code > 0 {
+                self.概率[元素序列[i]] += frequency as f64 * sign as f64 / self.total_frequency as f64;
+                partial_code /= self.radix;
+                i += 1;
+            }
         }
         // 6. 简码
         if let Some(levels) = &partial_weights.levels {

@@ -6,6 +6,7 @@ use std::iter::zip;
 
 pub struct 默认编码器 {
     编码结果: Vec<编码信息>,
+    元素序列: Vec<Vec<usize>>,
     编码配置: 编码配置,
     词信息: Vec<可编码对象>,
     全码空间: 编码空间,
@@ -25,6 +26,7 @@ impl 默认编码器 {
         }
         let 词信息 = 数据.词列表.clone();
         let 编码结果 = 词信息.iter().map(编码信息::new).collect();
+        let 元素序列 = 词信息.iter().map(|可编码对象| 可编码对象.元素序列.clone()).collect();
         let 线性表长度 = 数据.进制.pow(最大码长 as u32) as usize;
         let 全码空间 = 编码空间 {
             线性表: vec![u8::default(); 线性表长度],
@@ -44,6 +46,7 @@ impl 默认编码器 {
         let 编码配置 = 编码配置::new(数据)?;
         Ok(Self {
             编码结果,
+            元素序列,
             编码配置,
             词信息,
             全码空间,
@@ -172,15 +175,15 @@ impl 编码器 for 默认编码器 {
         &mut self,
         映射: &元素映射,
         移动的元素: &Option<Vec<元素>>,
-    ) -> &mut Vec<编码信息> {
+    ) -> (&mut Vec<编码信息>, &Vec<Vec<usize>>) {
         self.重置();
         self.输出全码(映射, 移动的元素);
         if self.编码配置.简码配置列表.is_none()
             || self.编码配置.简码配置列表.as_ref().unwrap().is_empty()
         {
-            return &mut self.编码结果;
+            return (&mut self.编码结果, &self.元素序列);
         }
         self.输出简码();
-        &mut self.编码结果
+        (&mut self.编码结果, &self.元素序列)
     }
 }
