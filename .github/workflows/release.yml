@@ -132,3 +132,4 @@ jobs:
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
