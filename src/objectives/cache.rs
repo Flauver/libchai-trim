@@ -93,7 +93,8 @@ impl 缓存 {
             .collect::<Vec<_>>();
         let 对数概率 = 概率
             .iter()
-            .map(|x| (x + 1e-8).ln())
+            .filter(|x| **x != 0.0)
+            .map(|x| x.ln())
             .collect::<Vec<_>>();
         let 缩放概率 = 对数概率
             .iter()
