@@ -362,11 +362,7 @@ impl 缓存 {
         // 5. 重码
         if duplicate {
             self.total_duplication += frequency;
-            let mut 位数 = 1;
-            while 位数 * self.radix <= code {
-                位数 *= self.radix;
-            }
-            let 首选元素序列 = &self.首选元素序列[&(code % 位数)];
+            let 首选元素序列 = &self.首选元素序列[&code];
             let mut 未归一化概率 = Vec::new();
             let mut partial_code = code;
             let mut i = 0;
