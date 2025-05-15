@@ -13,6 +13,7 @@ use crate::data::编码;
 use crate::data::部分编码信息;
 use crate::data::键位分布损失函数;
 use std::collections::HashMap;
+use std::f64;
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -70,7 +71,7 @@ impl 缓存 {
         );
     }
 
-    pub fn 汇总(&self, 参数: &默认目标函数参数) -> (分组指标, f64) {
+    pub fn 汇总(&mut self, 参数: &默认目标函数参数, 进度: f64) -> (分组指标, f64) {
         let partial_weights = &self.partial_weights;
         let 键位分布信息 = &参数.键位分布信息;
         // 初始化返回值和标量化的损失函数
@@ -84,6 +85,27 @@ impl 缓存 {
             duplication: None,
             levels: None,
         };
+        //剪枝
+        let 频率和: f64 = self.概率.iter().sum();
+        let 概率 = self.概率
+            .iter()
+            .map(|x| x / 频率和)
+            .collect::<Vec<_>>();
+        let 对数概率 = 概率
+            .iter()
+            .map(|x| (x + 1e-8).ln())
+            .collect::<Vec<_>>();
+        let 缩放概率 = 对数概率
+            .iter()
+            .map(|x| x * (1.0 - 进度))
+            .collect::<Vec<_>>();
+        let 缩放概率的最大值 = 缩放概率.iter().fold(f64::NEG_INFINITY, |this: f64, other: &f64| f64::max(this, *other));
+        let 指数和: f64 = 缩放概率.iter().map(|&x| (x - 缩放概率的最大值).exp()).sum();
+        self.概率 = 缩放概率
+            .iter()
+            .map(|&x| (x - 缩放概率的最大值).exp() / 指数和)
+            .collect::<Vec<_>>();
+
         let mut 损失函数 = 0.0;
         // 一、全局指标
         // 1. 按键分布
