@@ -1,3 +1,5 @@
+use rustc_hash::FxHashMap;
+
 use super::default::默认目标函数参数;
 use super::metric::FingeringMetric;
 use super::metric::FingeringMetricUniform;
@@ -12,6 +14,7 @@ use crate::data::部分编码信息;
 use crate::data::键位分布损失函数;
 use std::collections::HashMap;
 use std::iter::zip;
+use std::sync::Arc;
 
 // 用于缓存计算目标函数的中间结果，方便实现增量计算
 #[derive(Debug, Clone)]
@@ -35,6 +38,7 @@ pub struct 缓存 {
     length_breakpoints: Vec<u64>,
     radix: u64,
     pub 概率: Vec<f64>,
+    首选元素序列: FxHashMap<u64, Arc<Vec<usize>>>,
 }
 
 impl 缓存 {
@@ -45,13 +49,13 @@ impl 缓存 {
         频率: u64,
         编码信息: &mut 部分编码信息,
         参数: &默认目标函数参数,
-        元素序列: &Vec<usize>,
+        元素序列: Arc<Vec<usize>>,
     ) {
         if !编码信息.有变化 {
             return;
         }
         编码信息.有变化 = false;
-        self.增减(序号, 频率, 编码信息.实际编码, 编码信息.选重标记, 参数, 1, &元素序列);
+        self.增减(序号, 频率, 编码信息.实际编码, 编码信息.选重标记, 参数, 1, 元素序列.clone());
         if 编码信息.上一个实际编码 == 0 {
             return;
         }
@@ -255,6 +259,7 @@ impl 缓存 {
             length_breakpoints,
             radix,
             概率: vec![0.0; 元素数],
+            首选元素序列: FxHashMap::default(),
         }
     }
 
@@ -285,7 +290,7 @@ impl 缓存 {
         duplicate: bool,
         parameters: &默认目标函数参数,
         sign: i64,
-        元素序列: &Vec<usize>, 
+        元素序列: Arc<Vec<usize>>, 
     ) {
         let frequency = frequency as i64 * sign;
         let radix = self.radix;
@@ -334,12 +339,28 @@ impl 缓存 {
         // 5. 重码
         if duplicate {
             self.total_duplication += frequency;
+            let mut 位数 = 1;
+            while 位数 * self.radix <= code {
+                位数 *= self.radix;
+            }
+            let 首选元素序列 = &self.首选元素序列[&(code % 位数)];
+            let mut 未归一化概率 = Vec::new();
             let mut partial_code = code;
             let mut i = 0;
             while partial_code > self.radix {
-                self.概率[元素序列[i]] += frequency as f64 * sign as f64 / self.total_frequency as f64;
+                if 首选元素序列[i] != 元素序列[i] {
+                    未归一化概率.push((首选元素序列[i], frequency as f64 / self.total_frequency as f64));
+                    未归一化概率.push((元素序列[i], frequency as f64 / self.total_frequency as f64));
+                }
                 partial_code /= self.radix;
                 i += 1;
+            }
+            for (元素, 概率) in &未归一化概率 {
+                self.概率[*元素] += 概率 / 未归一化概率.len() as f64 * 2.0;
+            }
+        } else {
+            if sign == 1 {
+                self.首选元素序列.insert(code, 元素序列.clone());
             }
         }
         // 6. 简码

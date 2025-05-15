@@ -1,5 +1,7 @@
 //! 编码器接口，以及默认编码器的实现
 
+use std::sync::Arc;
+
 use crate::{
     data::{元素, 元素映射, 数据, 最大词长, 编码, 编码信息, 自动上屏, 键},
     错误,
@@ -13,7 +15,7 @@ pub trait 编码器 {
         &mut self,
         keymap: &元素映射,
         moved_elements: &Option<Vec<元素>>,
-    ) -> (&mut Vec<编码信息>, &Vec<Vec<usize>>);
+    ) -> (&mut Vec<编码信息>, &Vec<Arc<Vec<usize>>>);
 }
 
 #[derive(Clone)]

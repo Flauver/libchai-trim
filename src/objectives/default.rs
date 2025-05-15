@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use rustc_hash::FxHashMap;
 
 use super::cache::缓存;
@@ -84,7 +86,7 @@ impl 目标函数 for 默认目标函数 {
 
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
-        &mut self, 编码结果: &mut [编码信息], 元素序列: &Vec<Vec<usize>>, 映射: &元素映射
+        &mut self, 编码结果: &mut [编码信息], 元素序列: &Vec<Arc<Vec<usize>>>, 映射: &元素映射
     ) -> (默认指标, f64, Vec<f64>) {
         let 参数 = &self.参数;
 
@@ -96,10 +98,10 @@ impl 目标函数 for 默认目标函数 {
             let 桶 = &mut self.计数桶列表[桶索引];
             let 桶序号 = 桶序号列表[桶索引];
             if let Some(缓存) = &mut 桶[0] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数, &元素序列[i]);
+                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数, 元素序列[i].clone());
             }
             if let Some(缓存) = &mut 桶[1] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数, &元素序列[i]);
+                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数, 元素序列[i].clone());
             }
             桶序号列表[桶索引] += 1;
         }
