@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>        interface: <span class="kw-2">&amp;</span><span class="kw">dyn </span>界面,
 <a href=#52 id=52 data-nosnippet>52</a>    ) -&gt; 优化结果&lt;O&gt; {
 <a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">let </span><span class="kw-2">mut </span>best_candidate = 问题.数据.初始映射.clone();
-<a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span><span class="kw-2">mut </span>best_rank = 问题.计算(<span class="kw-2">&amp;</span>best_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>);
+<a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span><span class="kw-2">mut </span>best_rank = 问题.计算(<span class="kw-2">&amp;</span>best_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="number">0.0</span>);
 <a href=#55 id=55 data-nosnippet>55</a>        <span class="kw">let </span><span class="kw-2">mut </span>annealing_candidate = best_candidate.clone();
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>annealing_rank = best_rank.clone();
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span><span class="kw-2">mut </span>last_diff = <span class="macro">vec!</span>[];
@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>            <span class="kw">let </span>diff = 问题.操作.变异(<span class="kw-2">&amp;mut </span>next_candidate, <span class="kw-2">&amp;</span>annealing_rank.<span class="number">2</span>);
 <a href=#85 id=85 data-nosnippet>85</a>            <span class="kw">let </span><span class="kw-2">mut </span>total_diff = diff.clone();
 <a href=#86 id=86 data-nosnippet>86</a>            total_diff.extend(<span class="kw-2">&amp;</span>last_diff);
-<a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">let </span>next_rank = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(total_diff));
+<a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">let </span>next_rank = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(total_diff), step <span class="kw">as </span>f64 / steps <span class="kw">as </span>f64);
 <a href=#88 id=88 data-nosnippet>88</a>            <span class="comment">// 如果满足退火条件，接受新解
 <a href=#89 id=89 data-nosnippet>89</a>            </span><span class="kw">let </span>improvement = next_rank.<span class="number">1 </span>- annealing_rank.<span class="number">1</span>;
 <a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">if </span>improvement &lt; <span class="number">0.0 </span>|| (random::&lt;f64&gt;() &lt; (-improvement / temperature).exp()) {
@@ -126,14 +126,14 @@
 <a href=#126 id=126 data-nosnippet>126</a>        steps: usize,
 <a href=#127 id=127 data-nosnippet>127</a>    ) -&gt; (元素映射, f64, f64) {
 <a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">let </span><span class="kw-2">mut </span>candidate = from.clone();
-<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>energy, <span class="kw-2">mut </span>概率) = 问题.计算(<span class="kw-2">&amp;</span>candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>);
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw-2">mut </span>energy, <span class="kw-2">mut </span>概率) = 问题.计算(<span class="kw-2">&amp;</span>candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="number">0.0</span>);
 <a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span><span class="kw-2">mut </span>accepts = <span class="number">0</span>;
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span><span class="kw-2">mut </span>improves = <span class="number">0</span>;
 <a href=#132 id=132 data-nosnippet>132</a>
-<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">for _ in </span><span class="number">0</span>..steps {
+<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">for </span>step <span class="kw">in </span><span class="number">0</span>..steps {
 <a href=#134 id=134 data-nosnippet>134</a>            <span class="kw">let </span><span class="kw-2">mut </span>next_candidate = candidate.clone();
 <a href=#135 id=135 data-nosnippet>135</a>            <span class="kw">let </span>moved_elements = 问题.操作.变异(<span class="kw-2">&amp;mut </span>next_candidate, <span class="kw-2">&amp;</span>概率);
-<a href=#136 id=136 data-nosnippet>136</a>            <span class="kw">let </span>(<span class="kw">_</span>, next_energy, 下一个概率) = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(moved_elements));
+<a href=#136 id=136 data-nosnippet>136</a>            <span class="kw">let </span>(<span class="kw">_</span>, next_energy, 下一个概率) = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(moved_elements), step <span class="kw">as </span>f64 / steps <span class="kw">as </span>f64);
 <a href=#137 id=137 data-nosnippet>137</a>            <span class="kw">let </span>energy_delta = next_energy - energy;
 <a href=#138 id=138 data-nosnippet>138</a>            <span class="kw">if </span>energy_delta &lt; <span class="number">0.0 </span>|| (-energy_delta / temperature).exp() &gt; random::&lt;f64&gt;() {
 <a href=#139 id=139 data-nosnippet>139</a>                accepts += <span class="number">1</span>;
@@ -165,12 +165,12 @@
 <a href=#165 id=165 data-nosnippet>165</a>
 <a href=#166 id=166 data-nosnippet>166</a>        <span class="kw">let </span>batch = <span class="number">1000</span>;
 <a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">let </span><span class="kw-2">mut </span>candidate = 问题.数据.初始映射.clone();
-<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span>(<span class="kw">_</span>, energy, <span class="kw">_</span>) = 问题.计算(<span class="kw-2">&amp;</span>candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>);
+<a href=#168 id=168 data-nosnippet>168</a>        <span class="kw">let </span>(<span class="kw">_</span>, energy, <span class="kw">_</span>) = 问题.计算(<span class="kw-2">&amp;</span>candidate, <span class="kw-2">&amp;</span><span class="prelude-val">None</span>, <span class="number">0.0</span>);
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span><span class="kw-2">mut </span>sum_delta = <span class="number">0.0</span>;
 <a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">for _ in </span><span class="number">0</span>..batch {
 <a href=#171 id=171 data-nosnippet>171</a>            <span class="kw">let </span><span class="kw-2">mut </span>next_candidate = candidate.clone();
 <a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>moved_elements = 问题.操作.变异(<span class="kw-2">&amp;mut </span>next_candidate, <span class="kw-2">&amp;</span>FxHashMap::default());
-<a href=#173 id=173 data-nosnippet>173</a>            <span class="kw">let </span>(<span class="kw">_</span>, next_energy, <span class="kw">_</span>) = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(moved_elements));
+<a href=#173 id=173 data-nosnippet>173</a>            <span class="kw">let </span>(<span class="kw">_</span>, next_energy, <span class="kw">_</span>) = 问题.计算(<span class="kw-2">&amp;</span>next_candidate, <span class="kw-2">&amp;</span><span class="prelude-val">Some</span>(moved_elements), <span class="number">0.0</span>);
 <a href=#174 id=174 data-nosnippet>174</a>            sum_delta += (next_energy - energy).abs();
 <a href=#175 id=175 data-nosnippet>175</a>        }
 <a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">let </span>initial_guess = sum_delta / batch <span class="kw">as </span>f64;

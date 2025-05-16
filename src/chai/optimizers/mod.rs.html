@@ -57,10 +57,10 @@
 <a href=#57 id=57 data-nosnippet>57</a>    }
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">pub fn </span>计算(
-<a href=#60 id=60 data-nosnippet>60</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>, 映射: <span class="kw-2">&amp;</span>元素映射, 变化: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Vec&lt;元素&gt;&gt;
+<a href=#60 id=60 data-nosnippet>60</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>, 映射: <span class="kw-2">&amp;</span>元素映射, 变化: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Vec&lt;元素&gt;&gt;, 进度: f64
 <a href=#61 id=61 data-nosnippet>61</a>    ) -&gt; (O::目标值, f64, FxHashMap&lt;usize, f64&gt;) {
 <a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>编码结果 = <span class="self">self</span>.编码器.编码(映射, 变化);
-<a href=#63 id=63 data-nosnippet>63</a>        <span class="self">self</span>.目标函数.计算(编码结果, 映射)
+<a href=#63 id=63 data-nosnippet>63</a>        <span class="self">self</span>.目标函数.计算(编码结果, 映射, 进度)
 <a href=#64 id=64 data-nosnippet>64</a>    }
 <a href=#65 id=65 data-nosnippet>65</a>}
 <a href=#66 id=66 data-nosnippet>66</a>
