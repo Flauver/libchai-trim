@@ -1,6 +1,7 @@
 use super::{简码配置, 编码器, 编码空间, 编码配置};
 use crate::data::{元素, 元素映射, 可编码对象, 数据, 编码信息};
-use crate::错误;
+use crate::{命令行, 命令行参数, 错误};
+use clap::Parser;
 use rustc_hash::FxHashMap;
 use std::iter::zip;
 use std::sync::Arc;
@@ -14,7 +15,15 @@ pub struct 默认编码器 {
     包含元素的词: Vec<Vec<usize>>,
 }
 
-pub static mut 元素序列: Option<Vec<Arc<Vec<usize>>>> = None;
+lazy_static::lazy_static! {
+    pub static ref 元素序列: Vec<Arc<Vec<usize>>> = {
+        let 参数 = 命令行参数::parse();
+        let 命令行 = 命令行::新建(参数, None);
+        let 数据 = 命令行.准备数据();
+        let 编码器 = 默认编码器::新建(&数据).unwrap();
+        编码器.词信息.iter().map(|x| Arc::new(x.元素序列.clone())).collect()
+    };
+}
 
 impl 默认编码器 {
     /// 提供配置表示、拆分表、词表和共用资源来创建一个编码引擎
@@ -28,7 +37,6 @@ impl 默认编码器 {
         }
         let 词信息 = 数据.词列表.clone();
         let 编码结果 = 词信息.iter().map(编码信息::new).collect();
-        unsafe { 元素序列 = Some(词信息.iter().map(|x| Arc::new(x.元素序列.clone())).collect()) }
         let 线性表长度 = 数据.进制.pow(最大码长 as u32) as usize;
         let 全码空间 = 编码空间 {
             线性表: vec![u8::default(); 线性表长度],
