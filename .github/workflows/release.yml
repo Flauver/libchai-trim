@@ -24,6 +24,20 @@ jobs:
           path: |
             assets
             examples
+      - name: Generate release name
+        id: generate-release-name
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const formattedDate = `${year}${month}${day}${hours}`;
+            const hash = process.env.GITHUB_SHA.substring(0, 7);
+            const releaseName = `${formattedDate}.${hash}`;
+            core.setOutput('RELEASE_NAME', releaseName);
       - name: Build Changelog
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@v5          
@@ -41,6 +55,7 @@ jobs:
           body: |
             ${{ steps.build_changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
   build-linux:
     needs: prepare
