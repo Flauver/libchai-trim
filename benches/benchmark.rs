@@ -6,6 +6,7 @@ use chai::objectives::目标函数;
 use chai::operators::default::默认操作;
 use chai::{命令行, 错误};
 use criterion::{criterion_group, criterion_main, Criterion};
+use rustc_hash::FxHashMap;
 
 fn 计时(数据: 数据, 名称: &str, b: &mut Criterion) -> Result<(), 错误> {
     let mut 编码器 = 默认编码器::新建(&数据)?;
@@ -14,7 +15,7 @@ fn 计时(数据: 数据, 名称: &str, b: &mut Criterion) -> Result<(), 错误>
     b.bench_function(名称, |b| {
         b.iter(|| {
             let mut 映射 = 数据.初始映射.clone();
-            let 模拟移动的元素 = 操作.有约束的随机移动(&mut 映射);
+            let 模拟移动的元素 = 操作.有约束的随机移动(&mut 映射, &FxHashMap::default());
             let mut 编码结果 = 编码器.编码(&映射, &Some(模拟移动的元素));
             目标函数.计算(&mut 编码结果, &映射);
         })

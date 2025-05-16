@@ -3,8 +3,11 @@ use crate::config::{AtomicConstraint, MappedKey, SolverConfig};
 use crate::data::{键, 数据};
 use crate::data::{元素, 元素映射};
 use crate::错误;
+use rand::distributions::WeightedIndex;
+use rand::prelude::Distribution;
 use rand::seq::{IteratorRandom, SliceRandom};
 use rand::{random, thread_rng};
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::collections::{HashMap, HashSet};
@@ -33,7 +36,7 @@ pub const DEFAULT_MUTATE: 变异配置 = 变异配置 {
 };
 
 impl 变异 for 默认操作 {
-    fn 变异(&mut self, candidate: &mut 元素映射) -> Vec<元素> {
+    fn 变异(&mut self, candidate: &mut 元素映射, 概率: &FxHashMap<usize, f64>) -> Vec<元素> {
         let 变异配置 {
             random_move,
             random_swap,
@@ -44,11 +47,11 @@ impl 变异 for 默认操作 {
         let ratio2 = (random_move + random_swap) / sum;
         let number: f64 = random();
         if number < ratio1 {
-            self.有约束的随机移动(candidate)
+            self.有约束的随机移动(candidate, 概率)
         } else if number < ratio2 {
             self.有约束的随机交换(candidate)
         } else {
-            self.有约束的整键随机交换(candidate)
+            self.有约束的整键随机交换(candidate, 概率)
         }
     }
 }
@@ -161,10 +164,19 @@ impl 默认操作 {
         Ok((fixed, narrowed))
     }
 
-    fn get_movable_element(&self) -> usize {
+    fn get_movable_element(&self, 概率: &FxHashMap<usize, f64>) -> usize {
         let mut rng = thread_rng();
         loop {
-            let key = (self.radix..self.elements).choose(&mut rng).unwrap();
+            let key = if 概率.is_empty() {
+                (self.radix..self.elements).choose(&mut rng).unwrap()
+            } else {
+                let 概率 = 概率.iter().collect::<Vec<(&usize, &f64)>>();
+                let index = WeightedIndex::new(概率.iter().map(|(_, v)| *v));
+                match index {
+                    Ok(ref index) => index.sample(&mut rng),
+                    Err(_) => (self.radix..self.elements).choose(&mut rng).unwrap()
+                }
+            };
             if !self.fixed.contains(&key) {
                 return key;
             }
@@ -201,11 +213,11 @@ impl 默认操作 {
         vec![element1, element2]
     }
 
-    pub fn 有约束的整键随机交换(&self, keymap: &mut 元素映射) -> Vec<元素> {
+    pub fn 有约束的整键随机交换(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>) -> Vec<元素> {
         let mut rng = thread_rng();
         // 寻找一个可移动元素和一个它的可行移动位置，然后把这两个键上的所有元素交换
         // 这样交换不成也至少能移动一次
-        let movable_element = self.get_movable_element();
+        let movable_element = self.get_movable_element(概率);
         let key1 = keymap[movable_element];
         let mut destinations = self
             .narrowed
@@ -230,9 +242,9 @@ impl 默认操作 {
         moved_elements
     }
 
-    pub fn 有约束的随机移动(&self, keymap: &mut 元素映射) -> Vec<元素> {
+    pub fn 有约束的随机移动(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>) -> Vec<元素> {
         let mut rng = thread_rng();
-        let movable_element = self.get_movable_element();
+        let movable_element = self.get_movable_element(概率);
         let current = keymap[movable_element];
         let destinations = self
             .narrowed

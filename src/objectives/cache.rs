@@ -1,3 +1,5 @@
+use rustc_hash::FxHashMap;
+
 use super::default::默认目标函数参数;
 use super::metric::FingeringMetric;
 use super::metric::FingeringMetricUniform;
@@ -12,6 +14,7 @@ use crate::data::部分编码信息;
 use crate::data::键位分布损失函数;
 use std::collections::HashMap;
 use std::iter::zip;
+use std::sync::Arc;
 
 // 用于缓存计算目标函数的中间结果，方便实现增量计算
 #[derive(Debug, Clone)]
@@ -34,6 +37,9 @@ pub struct 缓存 {
     segment: u64,
     length_breakpoints: Vec<u64>,
     radix: u64,
+    pub 概率: FxHashMap<usize, f64>,
+    上一次增加的概率: FxHashMap<u64, Vec<(usize, f64)>>,
+    首选元素序列: FxHashMap<u64, Arc<Vec<usize>>>,
 }
 
 impl 缓存 {
@@ -44,22 +50,31 @@ impl 缓存 {
         频率: u64,
         编码信息: &mut 部分编码信息,
         参数: &默认目标函数参数,
+        元素序列: &Arc<Vec<usize>>,
     ) {
         if !编码信息.有变化 {
             return;
         }
         编码信息.有变化 = false;
-        self.增减(序号, 频率, 编码信息.实际编码, 编码信息.选重标记, 参数, 1);
-        if 编码信息.上一个实际编码 == 0 {
-            return;
+        if 编码信息.上一个实际编码 != 0 {
+            self.增减(
+                序号,
+                频率,
+                编码信息.上一个实际编码,
+                编码信息.上一个选重标记,
+                参数,
+                -1,
+                元素序列,
+            );
         }
         self.增减(
             序号,
             频率,
-            编码信息.上一个实际编码,
-            编码信息.上一个选重标记,
+            编码信息.实际编码,
+            编码信息.选重标记,
             参数,
-            -1,
+            1,
+            元素序列,
         );
     }
 
@@ -195,6 +210,10 @@ impl 缓存 {
         }
         (分组指标, 损失函数)
     }
+
+    pub fn 重置概率(&mut self) {
+        self.概率 = FxHashMap::default();
+    }
 }
 
 impl 缓存 {
@@ -250,6 +269,9 @@ impl 缓存 {
             segment,
             length_breakpoints,
             radix,
+            概率: FxHashMap::default(),
+            上一次增加的概率: FxHashMap::default(),
+            首选元素序列: FxHashMap::default(),
         }
     }
 
@@ -280,6 +302,7 @@ impl 缓存 {
         duplicate: bool,
         parameters: &默认目标函数参数,
         sign: i64,
+        元素序列: &Arc<Vec<usize>>,
     ) {
         let frequency = frequency as i64 * sign;
         let radix = self.radix;
@@ -328,6 +351,30 @@ impl 缓存 {
         // 5. 重码
         if duplicate {
             self.total_duplication += frequency;
+            if sign == 1 {
+                let mut 未归一化频率 = Vec::new();
+                let 首选元素序列 = &self.首选元素序列[&code];
+                for (元素1, 元素2) in 元素序列.iter().zip(首选元素序列.iter()) {
+                    if 元素1 != 元素2 {
+                        未归一化频率.push((元素1, frequency as f64 / self.total_frequency as f64));
+                        未归一化频率.push((元素2, frequency as f64 / self.total_frequency as f64));
+                    }
+                }
+                for (元素, 频率) in 未归一化频率.iter() {
+                    *self.概率.entry(**元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
+                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
+                }
+            } else {
+                if let Some(上一次增加的概率) = self.上一次增加的概率.get(&code) {
+                    for (元素, 概率) in 上一次增加的概率.iter() {
+                        *self.概率.get_mut(元素).unwrap() -= 概率;
+                    }
+                }
+            }
+        } else {
+            if sign == 1 {
+                self.首选元素序列.insert(code, 元素序列.clone());
+            }
         }
         // 6. 简码
         if let Some(levels) = &partial_weights.levels {

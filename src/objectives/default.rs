@@ -7,6 +7,7 @@ use crate::config::PartialWeights;
 use crate::data::{
     元素映射, 指法向量, 数据, 正则化, 编码信息, 键位分布损失函数
 };
+use crate::encoders::default::元素序列;
 use crate::错误;
 
 #[derive(Clone)]
@@ -85,21 +86,29 @@ impl 目标函数 for 默认目标函数 {
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
         &mut self, 编码结果: &mut [编码信息], 映射: &元素映射
-    ) -> (默认指标, f64) {
+    ) -> (默认指标, f64, FxHashMap<usize, f64>) {
         let 参数 = &self.参数;
+
+//        for i in 0..2 {
+//            for j in 0..2 {
+//                if let Some(缓存) = &mut self.计数桶列表[i][j] {
+//                    缓存.重置概率();
+//                }
+//            }
+//        }
 
         let mut 桶序号列表: Vec<_> = self.计数桶列表.iter().map(|_| 0).collect();
         // 开始计算指标
-        for 编码信息 in 编码结果.iter_mut() {
+        for (i, 编码信息) in 编码结果.iter_mut().enumerate() {
             let 频率 = 编码信息.频率;
             let 桶索引 = if 编码信息.词长 == 1 { 0 } else { 1 };
             let 桶 = &mut self.计数桶列表[桶索引];
             let 桶序号 = 桶序号列表[桶索引];
             if let Some(缓存) = &mut 桶[0] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数);
+                缓存.处理(桶序号, 频率, &mut 编码信息.全码, 参数, unsafe { &元素序列.as_ref().unwrap()[i] });
             }
             if let Some(缓存) = &mut 桶[1] {
-                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数);
+                缓存.处理(桶序号, 频率, &mut 编码信息.简码, 参数, unsafe { &元素序列.as_ref().unwrap()[i] });
             }
             桶序号列表[桶索引] += 1;
         }
@@ -154,6 +163,6 @@ impl 目标函数 for 默认目标函数 {
             let 归一化记忆量 = 记忆量 / 映射.len() as f64;
             目标函数 += 归一化记忆量 * 参数.正则化强度;
         }
-        (指标, 目标函数)
+        (指标, 目标函数, self.计数桶列表[0][1].as_ref().unwrap().概率.clone())
     }
 }
