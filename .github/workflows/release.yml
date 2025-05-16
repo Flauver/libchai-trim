@@ -48,6 +48,7 @@ jobs:
             ${{ steps.build_changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.build_info.outputs.BUILD_NAME }}
+          commit: ${{ github.sha }}
           name: ${{ steps.build_info.outputs.BUILD_NAME }}
 
   build-linux:
