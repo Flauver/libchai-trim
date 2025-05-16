@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - "*"
-env:
-  # 生成形如 1.0.0+20240521.123456.abcdef1 的版本号
-  VERSION: "$(date -u +%Y%m%d.%H%M%S).${GITHUB_SHA:0:7}"
 
 jobs:
   prepare:
@@ -14,6 +11,12 @@ jobs:
     outputs:
       changelog: ${{ steps.build_changelog.outputs.changelog }}
     steps:
+      - name: Generate build info
+        id: build_info
+        run: |
+          DATE=$(date -u +%Y%m%d.%H%M%S)
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "BUILD_NAME=Build $DATE.$SHORT_SHA" >> $GITHUB_OUTPUT
       - name: 拉取代码
         uses: actions/checkout@v3
       - name: 获取静态资源
@@ -44,8 +47,8 @@ jobs:
           body: |
             ${{ steps.build_changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag_name: ${{ env.VERSION }}
-          name: Build ${{ env.VERSION }}
+          tag_name: ${{ steps.build_info.outputs.BUILD_NAME }}
+          name: ${{ steps.build_info.outputs.BUILD_NAME }}
 
   build-linux:
     needs: prepare
