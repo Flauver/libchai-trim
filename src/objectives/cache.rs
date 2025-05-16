@@ -13,6 +13,7 @@ use crate::data::编码;
 use crate::data::部分编码信息;
 use crate::data::键位分布损失函数;
 use std::collections::HashMap;
+use std::f64;
 use std::iter::zip;
 use std::sync::Arc;
 
@@ -78,7 +79,7 @@ impl 缓存 {
         );
     }
 
-    pub fn 汇总(&self, 参数: &默认目标函数参数) -> (分组指标, f64) {
+    pub fn 汇总(&mut self, 参数: &默认目标函数参数, 进度: f64) -> (分组指标, f64) {
         let partial_weights = &self.partial_weights;
         let 键位分布信息 = &参数.键位分布信息;
         // 初始化返回值和标量化的损失函数
@@ -92,6 +93,12 @@ impl 缓存 {
             duplication: None,
             levels: None,
         };
+        let 频率和: f64 = self.概率.values().into_iter().sum();
+        let 归一化概率 = self.概率.iter().map(|x| (x.0, x.1 / 频率和)).collect::<FxHashMap<_, _>>();
+        let 最大概率 = 归一化概率.values().fold(f64::NEG_INFINITY, |x, y| f64::max(x, *y));
+        let 指数概率 = 归一化概率.into_iter().map(|x| (*x.0, ((x.1 - 最大概率) / 进度).exp())).collect::<FxHashMap<_, _>>();
+        let 指数概率和: f64 = 指数概率.values().sum();
+        self.概率 = 指数概率.into_iter().map(|x| (x.0, x.1 / 指数概率和)).collect::<FxHashMap<_, _>>();
         let mut 损失函数 = 0.0;
         // 一、全局指标
         // 1. 按键分布

@@ -85,7 +85,7 @@ impl 目标函数 for 默认目标函数 {
 
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
-        &mut self, 编码结果: &mut [编码信息], 映射: &元素映射
+        &mut self, 编码结果: &mut [编码信息], 映射: &元素映射, 进度: f64
     ) -> (默认指标, f64, FxHashMap<usize, f64>) {
         let 参数 = &self.参数;
 
@@ -121,9 +121,9 @@ impl 目标函数 for 默认目标函数 {
             words_short: None,
             memory: None,
         };
-        for (桶索引, 桶) in self.计数桶列表.iter().enumerate() {
-            let _ = &桶[0].as_ref().map(|x| {
-                let (分组指标, 分组目标函数) = x.汇总(参数);
+        for (桶索引, 桶) in self.计数桶列表.iter_mut().enumerate() {
+            let _ = 桶[0].as_mut().map(|x| {
+                let (分组指标, 分组目标函数) = x.汇总(参数, 进度);
                 目标函数 += 分组目标函数;
                 if 桶索引 == 0 {
                     指标.characters_full = Some(分组指标);
@@ -131,8 +131,8 @@ impl 目标函数 for 默认目标函数 {
                     指标.words_full = Some(分组指标);
                 }
             });
-            let _ = &桶[1].as_ref().map(|x| {
-                let (分组指标, 分组目标函数) = x.汇总(参数);
+            let _ = &mut 桶[1].as_mut().map(|x| {
+                let (分组指标, 分组目标函数) = x.汇总(参数, 进度);
                 目标函数 += 分组目标函数;
                 if 桶索引 == 0 {
                     指标.characters_short = Some(分组指标);
