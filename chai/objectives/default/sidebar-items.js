@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["PartialType"],"struct":["默认目标函数","默认目标函数参数"],"type":["Frequencies"]};
