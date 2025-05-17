@@ -193,8 +193,7 @@ impl 默认操作 {
         }
     }
 
-    fn 选择键(&self, 元素: usize, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 元素映射: &元素映射, 进度: f64) -> u64 {
-        let mut rng = thread_rng();
+    fn 生成选择键概率(&self, 元素: usize, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 元素映射: &元素映射, 进度: f64) -> Option<(Vec<(u64, f64)>, WeightedIndex<f64>)> {
         match 冲突.get(&元素) {
             Some(冲突) => {
                 let mut 概率 = FxHashMap::default();
@@ -214,13 +213,21 @@ impl 默认操作 {
                 let 最大概率 = 归一化概率.values().fold(0.0, |x, y| f64::max(x, *y));
                 let 指数概率 = 归一化概率.into_iter().map(|x| (x.0, ((x.1 - 最大概率) / (1.0 - 进度)).exp())).collect::<FxHashMap<_, _>>();
                 let 指数概率和: f64 = 指数概率.values().sum();
-                let 概率 = 指数概率.into_iter().map(|x| (x.0, x.1 / 指数概率和)).collect::<Vec<(_, _)>>();
+                let 概率 = 指数概率.into_iter().map(|x| (*x.0, x.1 / 指数概率和)).collect::<Vec<(_, _)>>();
                 let index = WeightedIndex::new(概率.iter().map(|(_, v)| *v));
                 match index {
-                    Ok(index) => *概率[index.sample(&mut rng)].0,
-                    Err(_) => *self.narrowed.get(&元素).unwrap_or(&self.alphabet).choose(&mut rng).unwrap()
+                    Ok(index) => Some((概率, index)),
+                    Err(_) => None
                 }
             },
+            None => None
+        }
+    }
+
+    fn 选择键(&self, 元素: usize, 概率: &Option<(Vec<(u64, f64)>, WeightedIndex<f64>)>) -> u64 {
+        let mut rng = thread_rng();
+        match 概率 {
+            Some((概率, 权重索引)) => 概率[权重索引.sample(&mut rng)].0,
             None => *self.narrowed.get(&元素).unwrap_or(&self.alphabet).choose(&mut rng).unwrap()
         }
     }
@@ -277,9 +284,10 @@ impl 默认操作 {
     pub fn 有约束的随机移动(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 进度: f64) -> Vec<元素> {
         let movable_element = self.get_movable_element(概率);
         let current = keymap[movable_element];
-        let mut key = self.选择键(movable_element, 冲突, keymap, 进度); // 在编译约束时已经确保了这里一定有可行的移动位置
+        let 概率 = self.生成选择键概率(movable_element, 冲突, keymap, 进度);
+        let mut key = self.选择键(movable_element, &概率); // 在编译约束时已经确保了这里一定有可行的移动位置
         while key == current {
-            key = self.选择键(movable_element, 冲突, keymap, 进度);
+            key = self.选择键(movable_element, &概率);
         }
         keymap[movable_element] = key;
         vec![movable_element]
