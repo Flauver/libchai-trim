@@ -15,7 +15,6 @@ use crate::data::键位分布损失函数;
 use std::collections::HashMap;
 use std::f64;
 use std::iter::zip;
-use std::sync::Arc;
 
 // 用于缓存计算目标函数的中间结果，方便实现增量计算
 #[derive(Debug, Clone)]
@@ -39,8 +38,9 @@ pub struct 缓存 {
     length_breakpoints: Vec<u64>,
     radix: u64,
     pub 概率: FxHashMap<usize, f64>,
-    上一次增加的概率: FxHashMap<u64, Vec<(usize, f64)>>,
-    首选元素序列: FxHashMap<u64, Arc<Vec<usize>>>,
+    pub 冲突: FxHashMap<usize, FxHashMap<usize, f64>>,
+    上一次增加的概率: FxHashMap<u64, Vec<(usize, usize, f64)>>,
+    首选元素序列: FxHashMap<u64, &'static Vec<usize>>,
 }
 
 impl 缓存 {
@@ -51,7 +51,7 @@ impl 缓存 {
         频率: u64,
         编码信息: &mut 部分编码信息,
         参数: &默认目标函数参数,
-        元素序列: &Arc<Vec<usize>>,
+        元素序列: &'static Vec<usize>,
     ) {
         if !编码信息.有变化 {
             return;
@@ -277,6 +277,7 @@ impl 缓存 {
             length_breakpoints,
             radix,
             概率: FxHashMap::default(),
+            冲突: FxHashMap::default(),
             上一次增加的概率: FxHashMap::default(),
             首选元素序列: FxHashMap::default(),
         }
@@ -309,7 +310,7 @@ impl 缓存 {
         duplicate: bool,
         parameters: &默认目标函数参数,
         sign: i64,
-        元素序列: &Arc<Vec<usize>>,
+        元素序列: &'static Vec<usize>,
     ) {
         let frequency = frequency as i64 * sign;
         let radix = self.radix;
@@ -367,20 +368,27 @@ impl 缓存 {
                         未归一化频率.push((元素2, frequency as f64 / self.total_frequency as f64));
                     }
                 }
-                for (元素, 频率) in 未归一化频率.iter() {
+                for (i, (元素, 频率)) in 未归一化频率.iter().enumerate() {
                     *self.概率.entry(**元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
-                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
+                    let 冲突元素 = 未归一化频率[if i % 2 == 0 {
+                        i + 1
+                    } else {
+                        i - 1
+                    }].0;
+                    *self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
+                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, *冲突元素, 频率 / 未归一化频率.len() as f64 * 2.0));
                 }
             } else {
                 if let Some(上一次增加的概率) = self.上一次增加的概率.get(&code) {
-                    for (元素, 概率) in 上一次增加的概率.iter() {
+                    for (元素, 冲突元素, 概率) in 上一次增加的概率.iter() {
                         *self.概率.get_mut(元素).unwrap() -= 概率;
+                        *self.冲突.get_mut(元素).unwrap().get_mut(冲突元素).unwrap() -= 概率;
                     }
                 }
             }
         } else {
             if sign == 1 {
-                self.首选元素序列.insert(code, 元素序列.clone());
+                self.首选元素序列.insert(code, 元素序列);
             }
         }
         // 6. 简码

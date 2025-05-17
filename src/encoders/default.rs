@@ -4,7 +4,6 @@ use crate::{命令行, 命令行参数, 错误};
 use clap::Parser;
 use rustc_hash::FxHashMap;
 use std::iter::zip;
-use std::sync::Arc;
 
 pub struct 默认编码器 {
     编码结果: Vec<编码信息>,
@@ -16,12 +15,12 @@ pub struct 默认编码器 {
 }
 
 lazy_static::lazy_static! {
-    pub static ref 元素序列: Vec<Arc<Vec<usize>>> = {
+    pub static ref 元素序列: Vec<Vec<usize>> = {
         let 参数 = 命令行参数::parse();
         let 命令行 = 命令行::新建(参数, None);
         let 数据 = 命令行.准备数据();
         let 编码器 = 默认编码器::新建(&数据).unwrap();
-        编码器.词信息.iter().map(|x| Arc::new(x.元素序列.clone())).collect()
+        编码器.词信息.iter().map(|x| x.元素序列.clone()).collect()
     };
 }
 
