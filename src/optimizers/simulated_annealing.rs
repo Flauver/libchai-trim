@@ -81,7 +81,7 @@ impl 退火方法 {
             }
             // 生成一个新解
             let mut next_candidate = annealing_candidate.clone();
-            let diff = 问题.操作.变异(&mut next_candidate, &annealing_rank.2);
+            let diff = 问题.操作.变异(&mut next_candidate, &annealing_rank.2, &annealing_rank.3, step as f64 / steps as f64);
             let mut total_diff = diff.clone();
             total_diff.extend(&last_diff);
             let next_rank = 问题.计算(&next_candidate, &Some(total_diff), step as f64 / steps as f64);
@@ -126,14 +126,14 @@ impl 退火方法 {
         steps: usize,
     ) -> (元素映射, f64, f64) {
         let mut candidate = from.clone();
-        let (_, mut energy, mut 概率) = 问题.计算(&candidate, &None, 0.0);
+        let (_, mut energy, mut 概率, mut 冲突) = 问题.计算(&candidate, &None, 0.0);
         let mut accepts = 0;
         let mut improves = 0;
 
         for step in 0..steps {
             let mut next_candidate = candidate.clone();
-            let moved_elements = 问题.操作.变异(&mut next_candidate, &概率);
-            let (_, next_energy, 下一个概率) = 问题.计算(&next_candidate, &Some(moved_elements), step as f64 / steps as f64);
+            let moved_elements = 问题.操作.变异(&mut next_candidate, &概率, &冲突, step as f64 / steps as f64);
+            let (_, next_energy, 下一个概率, 下一个冲突) = 问题.计算(&next_candidate, &Some(moved_elements), step as f64 / steps as f64);
             let energy_delta = next_energy - energy;
             if energy_delta < 0.0 || (-energy_delta / temperature).exp() > random::<f64>() {
                 accepts += 1;
@@ -143,6 +143,7 @@ impl 退火方法 {
                 candidate = next_candidate;
                 energy = next_energy;
                 概率 = 下一个概率;
+                冲突 = 下一个冲突;
             }
         }
         let accept_rate = accepts as f64 / steps as f64;
@@ -165,12 +166,12 @@ impl 退火方法 {
 
         let batch = 1000;
         let mut candidate = 问题.数据.初始映射.clone();
-        let (_, energy, _) = 问题.计算(&candidate, &None, 0.0);
+        let (_, energy, _, _) = 问题.计算(&candidate, &None, 0.0);
         let mut sum_delta = 0.0;
         for _ in 0..batch {
             let mut next_candidate = candidate.clone();
-            let moved_elements = 问题.操作.变异(&mut next_candidate, &FxHashMap::default());
-            let (_, next_energy, _) = 问题.计算(&next_candidate, &Some(moved_elements), 0.0);
+            let moved_elements = 问题.操作.变异(&mut next_candidate, &FxHashMap::default(), &FxHashMap::default(), 0.0);
+            let (_, next_energy, _, _) = 问题.计算(&next_candidate, &Some(moved_elements), 0.0);
             sum_delta += (next_energy - energy).abs();
         }
         let initial_guess = sum_delta / batch as f64;

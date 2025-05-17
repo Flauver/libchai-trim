@@ -86,7 +86,7 @@ impl 目标函数 for 默认目标函数 {
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
         &mut self, 编码结果: &mut [编码信息], 映射: &元素映射, 进度: f64
-    ) -> (默认指标, f64, FxHashMap<usize, f64>) {
+    ) -> (默认指标, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, f64>>) {
         let 参数 = &self.参数;
 
 //        for i in 0..2 {
@@ -163,6 +163,6 @@ impl 目标函数 for 默认目标函数 {
             let 归一化记忆量 = 记忆量 / 映射.len() as f64;
             目标函数 += 归一化记忆量 * 参数.正则化强度;
         }
-        (指标, 目标函数, self.计数桶列表[0][1].as_ref().unwrap().概率.clone())
+        (指标, 目标函数, self.计数桶列表[0][1].as_ref().unwrap().概率.clone(), self.计数桶列表[0][1].as_ref().unwrap().冲突.clone())
     }
 }
