@@ -86,6 +86,7 @@ jobs:
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
   build-macos:
     needs: prepare
@@ -119,6 +120,7 @@ jobs:
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
   build-windows:
     needs: prepare
@@ -146,3 +148,4 @@ jobs:
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
