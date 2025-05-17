@@ -80,12 +80,24 @@ jobs:
           tar -czf chai-linux-gnu.tar.gz chai assets/* examples/* README.md LICENSE
           cp target/x86_64-unknown-linux-musl/release/chai ./
           tar -czf chai-linux-musl.tar.gz chai assets/* examples/* README.md LICENSE
+      - name: Generate release name
+        id: generate-release-name
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const moment = require('moment-timezone');
+            const now = moment().tz('Asia/Shanghai');
+            const formattedDate = now.format('MMDDHH');
+            const hash = process.env.GITHUB_SHA.substring(0, 7);
+            const releaseName = `${formattedDate}.${hash}`;
+            core.setOutput('RELEASE_NAME', releaseName);
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "chai*.tar.gz"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
   build-macos:
     needs: prepare
@@ -113,12 +125,24 @@ jobs:
         run: |
           cp target/universal2-apple-darwin/release/chai ./
           tar -czf chai-macos.tar.gz chai assets/* examples/* README.md LICENSE
+      - name: Generate release name
+        id: generate-release-name
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const moment = require('moment-timezone');
+            const now = moment().tz('Asia/Shanghai');
+            const formattedDate = now.format('MMDDHH');
+            const hash = process.env.GITHUB_SHA.substring(0, 7);
+            const releaseName = `${formattedDate}.${hash}`;
+            core.setOutput('RELEASE_NAME', releaseName);
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "chai-macos.tar.gz"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
 
   build-windows:
     needs: prepare
@@ -140,9 +164,21 @@ jobs:
         run: |
           cp target/release/chai.exe ./
           7z a -tzip chai-windows.zip chai.exe assets/* examples/* README.md LICENSE
+      - name: Generate release name
+        id: generate-release-name
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const moment = require('moment-timezone');
+            const now = moment().tz('Asia/Shanghai');
+            const formattedDate = now.format('MMDDHH');
+            const hash = process.env.GITHUB_SHA.substring(0, 7);
+            const releaseName = `${formattedDate}.${hash}`;
+            core.setOutput('RELEASE_NAME', releaseName);
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "chai-windows.zip"
           allowUpdates: true
           body: ${{ needs.prepare.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          name: ${{ steps.generate-release-name.outputs.RELEASE_NAME }}
