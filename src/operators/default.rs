@@ -173,7 +173,7 @@ impl 默认操作 {
                 let 概率 = 概率.iter().collect::<Vec<(&usize, &f64)>>();
                 let index = WeightedIndex::new(概率.iter().map(|(_, v)| *v));
                 match index {
-                    Ok(ref index) => *概率[index.sample(&mut rng)].0,
+                    Ok(index) => *概率[index.sample(&mut rng)].0,
                     Err(_) => (self.radix..self.elements).choose(&mut rng).unwrap()
                 }
             };

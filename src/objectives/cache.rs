@@ -96,7 +96,7 @@ impl 缓存 {
         let 频率和: f64 = self.概率.values().into_iter().sum();
         let 归一化概率 = self.概率.iter().map(|x| (x.0, x.1 / 频率和)).collect::<FxHashMap<_, _>>();
         let 最大概率 = 归一化概率.values().fold(f64::NEG_INFINITY, |x, y| f64::max(x, *y));
-        let 指数概率 = 归一化概率.into_iter().map(|x| (*x.0, ((x.1 - 最大概率) / 进度).exp())).collect::<FxHashMap<_, _>>();
+        let 指数概率 = 归一化概率.into_iter().map(|x| (*x.0, ((x.1 - 最大概率) / (1.0 - 进度)).exp())).collect::<FxHashMap<_, _>>();
         let 指数概率和: f64 = 指数概率.values().sum();
         self.概率 = 指数概率.into_iter().map(|x| (x.0, x.1 / 指数概率和)).collect::<FxHashMap<_, _>>();
         let mut 损失函数 = 0.0;
