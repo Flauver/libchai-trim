@@ -24,6 +24,8 @@ jobs:
           path: |
             assets
             examples
+      - name: Install moment-timezone
+        run: npm install moment-timezone
       - name: Generate release name
         id: generate-release-name
         uses: actions/github-script@v6
