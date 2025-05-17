@@ -193,7 +193,7 @@ impl 默认操作 {
         }
     }
 
-    fn 生成选择键概率(&self, 元素: usize, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 元素映射: &元素映射, 进度: f64) -> Option<(Vec<(u64, f64)>, WeightedIndex<f64>)> {
+    fn 生成选择键概率(&self, 元素: usize, 当前键: u64, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 元素映射: &元素映射, 进度: f64) -> Option<(Vec<(u64, f64)>, WeightedIndex<f64>)> {
         match 冲突.get(&元素) {
             Some(冲突) => {
                 let mut 概率 = FxHashMap::default();
@@ -211,7 +211,8 @@ impl 默认操作 {
                 let 概率和: f64 = 概率.values().sum();
                 let 归一化概率 = 概率.iter().map(|x| (x.0, x.1 / 概率和)).collect::<FxHashMap<_, _>>();
                 let 最大概率 = 归一化概率.values().fold(0.0, |x, y| f64::max(x, *y));
-                let 指数概率 = 归一化概率.into_iter().map(|x| (x.0, ((x.1 - 最大概率) / (1.0 - 进度)).exp())).collect::<FxHashMap<_, _>>();
+                let mut 指数概率 = 归一化概率.into_iter().map(|x| (x.0, ((x.1 - 最大概率) / (1.0 - 进度)).exp())).collect::<FxHashMap<_, _>>();
+                指数概率.insert(&当前键, 0.0);
                 let 指数概率和: f64 = 指数概率.values().sum();
                 let 概率 = 指数概率.into_iter().map(|x| (*x.0, x.1 / 指数概率和)).collect::<Vec<(_, _)>>();
                 let index = WeightedIndex::new(概率.iter().map(|(_, v)| *v));
@@ -284,7 +285,7 @@ impl 默认操作 {
     pub fn 有约束的随机移动(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, f64>>, 进度: f64) -> Vec<元素> {
         let movable_element = self.get_movable_element(概率);
         let current = keymap[movable_element];
-        let 概率 = self.生成选择键概率(movable_element, 冲突, keymap, 进度);
+        let 概率 = self.生成选择键概率(movable_element, current, 冲突, keymap, 进度);
         let mut key = self.选择键(movable_element, &概率); // 在编译约束时已经确保了这里一定有可行的移动位置
         while key == current {
             key = self.选择键(movable_element, &概率);
