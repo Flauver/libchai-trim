@@ -1,6 +1,7 @@
 //! 优化方法接口，以及若干优化方法的实现
 //!
 
+use circular_buffer::CircularBuffer;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -58,7 +59,7 @@ impl<E: 编码器, O: 目标函数, F> 优化问题<E, O, F> {
 
     pub fn 计算(
         &mut self, 映射: &元素映射, 变化: &Option<Vec<元素>>, 进度: f64
-    ) -> (O::目标值, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, f64>>) {
+    ) -> (O::目标值, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>) {
         let 编码结果 = self.编码器.编码(映射, 变化);
         self.目标函数.计算(编码结果, 映射, 进度)
     }

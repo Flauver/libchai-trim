@@ -1,3 +1,4 @@
+use circular_buffer::CircularBuffer;
 use rustc_hash::FxHashMap;
 
 use super::default::默认目标函数参数;
@@ -38,8 +39,8 @@ pub struct 缓存 {
     length_breakpoints: Vec<u64>,
     radix: u64,
     pub 概率: FxHashMap<usize, f64>,
-    pub 冲突: FxHashMap<usize, FxHashMap<usize, f64>>,
-    上一次增加的概率: FxHashMap<u64, Vec<(usize, usize, f64)>>,
+    pub 冲突: FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>,
+    上一次增加的概率: FxHashMap<u64, Vec<(usize, f64)>>,
     首选元素序列: FxHashMap<u64, &'static Vec<usize>>,
 }
 
@@ -217,10 +218,6 @@ impl 缓存 {
         }
         (分组指标, 损失函数)
     }
-
-    pub fn 重置概率(&mut self) {
-        self.概率 = FxHashMap::default();
-    }
 }
 
 impl 缓存 {
@@ -375,14 +372,13 @@ impl 缓存 {
                     } else {
                         i - 1
                     }].0;
-                    *self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
-                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, *冲突元素, 频率 / 未归一化频率.len() as f64 * 2.0));
+                    self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(CircularBuffer::new()).push_back(频率 / 未归一化频率.len() as f64 * 2.0 / if 未归一化频率.len() == 1 { 2.0 } else { 1.0 });
+                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
                 }
             } else {
                 if let Some(上一次增加的概率) = self.上一次增加的概率.get(&code) {
-                    for (元素, 冲突元素, 概率) in 上一次增加的概率.iter() {
+                    for (元素, 概率) in 上一次增加的概率.iter() {
                         *self.概率.get_mut(元素).unwrap() -= 概率;
-                        *self.冲突.get_mut(元素).unwrap().get_mut(冲突元素).unwrap() -= 概率;
                     }
                 }
             }

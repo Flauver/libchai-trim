@@ -1,3 +1,4 @@
+use circular_buffer::CircularBuffer;
 use rustc_hash::FxHashMap;
 
 use super::cache::缓存;
@@ -86,17 +87,8 @@ impl 目标函数 for 默认目标函数 {
     /// 计算各个部分编码的指标，然后将它们合并成一个指标输出
     fn 计算(
         &mut self, 编码结果: &mut [编码信息], 映射: &元素映射, 进度: f64
-    ) -> (默认指标, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, f64>>) {
+    ) -> (默认指标, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>) {
         let 参数 = &self.参数;
-
-//        for i in 0..2 {
-//            for j in 0..2 {
-//                if let Some(缓存) = &mut self.计数桶列表[i][j] {
-//                    缓存.重置概率();
-//                }
-//            }
-//        }
-
         let mut 桶序号列表: Vec<_> = self.计数桶列表.iter().map(|_| 0).collect();
         // 开始计算指标
         for (i, 编码信息) in 编码结果.iter_mut().enumerate() {
