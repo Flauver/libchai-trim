@@ -358,22 +358,23 @@ impl 缓存 {
             self.total_duplication += frequency;
             if sign == 1 {
                 let mut 未归一化频率 = Vec::new();
-                let 首选元素序列 = &self.首选元素序列[&code];
-                for (元素1, 元素2) in 元素序列.iter().zip(首选元素序列.iter()) {
-                    if 元素1 != 元素2 {
-                        未归一化频率.push((元素1, frequency as f64 / self.total_frequency as f64));
-                        未归一化频率.push((元素2, frequency as f64 / self.total_frequency as f64));
+                if let Some(首选元素序列) = self.首选元素序列.get(&code) {
+                    for (元素1, 元素2) in 元素序列.iter().zip(首选元素序列.iter()) {
+                        if 元素1 != 元素2 {
+                            未归一化频率.push((元素1, frequency as f64 / self.total_frequency as f64));
+                            未归一化频率.push((元素2, frequency as f64 / self.total_frequency as f64));
+                        }
                     }
-                }
-                for (i, (元素, 频率)) in 未归一化频率.iter().enumerate() {
-                    *self.概率.entry(**元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
-                    let 冲突元素 = 未归一化频率[if i % 2 == 0 {
-                        i + 1
-                    } else {
-                        i - 1
-                    }].0;
-                    self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(CircularBuffer::new()).push_back(频率 / 未归一化频率.len() as f64 * 2.0 / if 未归一化频率.len() == 1 { 2.0 } else { 1.0 });
-                    self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
+                    for (i, (元素, 频率)) in 未归一化频率.iter().enumerate() {
+                        *self.概率.entry(**元素).or_insert(0.0) += 频率 / 未归一化频率.len() as f64 * 2.0;
+                        let 冲突元素 = 未归一化频率[if i % 2 == 0 {
+                            i + 1
+                        } else {
+                            i - 1
+                        }].0;
+                        self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(CircularBuffer::new()).push_back(频率 / 未归一化频率.len() as f64 * 2.0 / if 未归一化频率.len() == 1 { 2.0 } else { 1.0 });
+                        self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
+                    }
                 }
             } else {
                 if let Some(上一次增加的概率) = self.上一次增加的概率.get(&code) {
