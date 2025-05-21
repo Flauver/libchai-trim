@@ -37,7 +37,7 @@ pub const DEFAULT_MUTATE: 变异配置 = 变异配置 {
 };
 
 impl 变异 for 默认操作 {
-    fn 变异(&mut self, candidate: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>, 进度: f64) -> Vec<元素> {
+    fn 变异(&mut self, candidate: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<4, f64>>>, 进度: f64) -> Vec<元素> {
         let 变异配置 {
             random_move,
             random_swap,
@@ -194,7 +194,7 @@ impl 默认操作 {
         }
     }
 
-    fn 生成选择键概率(&self, 元素: usize, 当前键: u64, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>, 元素映射: &元素映射, 进度: f64) -> Option<(Vec<(u64, f64)>, WeightedIndex<f64>)> {
+    fn 生成选择键概率(&self, 元素: usize, 当前键: u64, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<4, f64>>>, 元素映射: &元素映射, 进度: f64) -> Option<(Vec<(u64, f64)>, WeightedIndex<f64>)> {
         match 冲突.get(&元素) {
             Some(冲突) => {
                 let mut 概率 = FxHashMap::default();
@@ -283,7 +283,7 @@ impl 默认操作 {
         moved_elements
     }
 
-    pub fn 有约束的随机移动(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>, 进度: f64) -> Vec<元素> {
+    pub fn 有约束的随机移动(&self, keymap: &mut 元素映射, 概率: &FxHashMap<usize, f64>, 冲突: &FxHashMap<usize, FxHashMap<usize, CircularBuffer<4, f64>>>, 进度: f64) -> Vec<元素> {
         let movable_element = self.get_movable_element(概率);
         let current = keymap[movable_element];
         let 概率 = self.生成选择键概率(movable_element, current, 冲突, keymap, 进度);

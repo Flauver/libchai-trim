@@ -1,5 +1,6 @@
 use circular_buffer::CircularBuffer;
 use rustc_hash::FxHashMap;
+use rustc_hash::FxHashSet;
 
 use super::default::默认目标函数参数;
 use super::metric::FingeringMetric;
@@ -39,8 +40,9 @@ pub struct 缓存 {
     length_breakpoints: Vec<u64>,
     radix: u64,
     pub 概率: FxHashMap<usize, f64>,
-    pub 冲突: FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>,
+    pub 冲突: FxHashMap<usize, FxHashMap<usize, CircularBuffer<4, f64>>>,
     上一次增加的概率: FxHashMap<u64, Vec<(usize, f64)>>,
+    增加冲突的字根: FxHashSet<(usize, usize)>,
     首选元素序列: FxHashMap<u64, &'static Vec<usize>>,
 }
 
@@ -218,6 +220,20 @@ impl 缓存 {
         }
         (分组指标, 损失函数)
     }
+    
+    pub fn 重置(&mut self) {
+        self.增加冲突的字根 = FxHashSet::default();
+    }
+
+    pub fn 冲突补全(&mut self) {
+        for (元素1, 冲突) in self.冲突.iter_mut() {
+            for (元素2, 冲突) in 冲突.iter_mut() {
+                if !self.增加冲突的字根.contains(&(*元素1, *元素2)) {
+                    冲突.push_back(0.0);
+                }
+            }
+        }
+    }
 }
 
 impl 缓存 {
@@ -276,6 +292,7 @@ impl 缓存 {
             概率: FxHashMap::default(),
             冲突: FxHashMap::default(),
             上一次增加的概率: FxHashMap::default(),
+            增加冲突的字根: FxHashSet::default(),
             首选元素序列: FxHashMap::default(),
         }
     }
@@ -372,7 +389,8 @@ impl 缓存 {
                         } else {
                             i - 1
                         }].0;
-                        self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(CircularBuffer::new()).push_back(频率 / 未归一化频率.len() as f64 * 2.0 / if 未归一化频率.len() == 1 { 2.0 } else { 1.0 });
+                        self.冲突.entry(**元素).or_insert(FxHashMap::default()).entry(*冲突元素).or_insert(CircularBuffer::new()).push_back(频率 / 未归一化频率.len() as f64 * 2.0 / if 未归一化频率.len() == 1 { 4.0 } else { 1.0 });
+                        self.增加冲突的字根.insert((**元素, *冲突元素));
                         self.上一次增加的概率.entry(code).or_insert(Vec::new()).push((**元素, 频率 / 未归一化频率.len() as f64 * 2.0));
                     }
                 }

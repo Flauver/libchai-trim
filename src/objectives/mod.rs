@@ -15,5 +15,5 @@ pub trait 目标函数 {
     type 目标值: Display + Clone + Serialize;
     fn 计算(
         &mut self, 编码结果: &mut [编码信息], 映射: &元素映射, 进度: f64
-    ) -> (Self::目标值, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, CircularBuffer<2, f64>>>);
+    ) -> (Self::目标值, f64, FxHashMap<usize, f64>, FxHashMap<usize, FxHashMap<usize, CircularBuffer<4, f64>>>);
 }
